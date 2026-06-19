@@ -1,0 +1,269 @@
+const STORAGE_KEY = "pwa-scheduler.schedules.v2";
+const ACTIVE_SCHEDULE_KEY = "pwa-scheduler.active-schedule.v1";
+const LEGACY_TASKS_KEY = "pwa-task-app.tasks.v1";
+
+const SCHEDULES = {
+  calendar: "Календарь",
+  regular: "Регулярное",
+  planning: "Планирование",
+  "task-list": "Список задач и целей"
+};
+
+const taskForm = document.querySelector("#taskForm");
+const taskInput = document.querySelector("#taskInput");
+const taskList = document.querySelector("#taskList");
+const taskTemplate = document.querySelector("#taskTemplate");
+const taskSummary = document.querySelector("#taskSummary");
+const emptyState = document.querySelector("#emptyState");
+const clearCompletedButton = document.querySelector("#clearCompletedButton");
+const installButton = document.querySelector("#installButton");
+const iosInstallTip = document.querySelector("#iosInstallTip");
+const connectionStatus = document.querySelector("#connectionStatus");
+const pageTitle = document.querySelector("#pageTitle");
+const openMenuButton = document.querySelector("#openMenuButton");
+const closeMenuButton = document.querySelector("#closeMenuButton");
+const sideMenu = document.querySelector("#sideMenu");
+const menuOverlay = document.querySelector("#menuOverlay");
+const scheduleLinks = [...document.querySelectorAll(".schedule-link")];
+
+let schedules = loadSchedules();
+let activeSchedule = loadActiveSchedule();
+let deferredInstallPrompt = null;
+
+function createEmptySchedules() {
+  return Object.fromEntries(Object.keys(SCHEDULES).map((key) => [key, []]));
+}
+
+function loadSchedules() {
+  const emptySchedules = createEmptySchedules();
+
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    const parsed = saved ? JSON.parse(saved) : null;
+
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      for (const key of Object.keys(SCHEDULES)) {
+        emptySchedules[key] = Array.isArray(parsed[key]) ? parsed[key] : [];
+      }
+      return emptySchedules;
+    }
+
+    const legacySaved = localStorage.getItem(LEGACY_TASKS_KEY);
+    const legacyTasks = legacySaved ? JSON.parse(legacySaved) : [];
+
+    if (Array.isArray(legacyTasks) && legacyTasks.length > 0) {
+      emptySchedules["task-list"] = legacyTasks;
+    }
+  } catch (error) {
+    console.warn("Не удалось прочитать сохранённые расписания:", error);
+  }
+
+  return emptySchedules;
+}
+
+function saveSchedules() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(schedules));
+  } catch (error) {
+    console.warn("Не удалось сохранить расписания:", error);
+  }
+}
+
+function loadActiveSchedule() {
+  const saved = localStorage.getItem(ACTIVE_SCHEDULE_KEY);
+  return Object.prototype.hasOwnProperty.call(SCHEDULES, saved) ? saved : "calendar";
+}
+
+function saveActiveSchedule() {
+  try {
+    localStorage.setItem(ACTIVE_SCHEDULE_KEY, activeSchedule);
+  } catch (error) {
+    console.warn("Не удалось сохранить выбранное расписание:", error);
+  }
+}
+
+function getActiveTasks() {
+  return schedules[activeSchedule];
+}
+
+function createTask(text) {
+  return {
+    id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
+    text,
+    completed: false,
+    createdAt: new Date().toISOString()
+  };
+}
+
+function renderSchedule() {
+  const scheduleName = SCHEDULES[activeSchedule];
+  pageTitle.textContent = scheduleName;
+  document.title = `${scheduleName} — Планировщик`;
+
+  for (const link of scheduleLinks) {
+    const isActive = link.dataset.schedule === activeSchedule;
+    link.classList.toggle("active", isActive);
+    link.setAttribute("aria-current", isActive ? "page" : "false");
+  }
+
+  renderTasks();
+}
+
+function renderTasks() {
+  const tasks = getActiveTasks();
+  taskList.replaceChildren();
+
+  for (const task of tasks) {
+    const fragment = taskTemplate.content.cloneNode(true);
+    const item = fragment.querySelector(".task-item");
+    const checkbox = fragment.querySelector(".task-checkbox");
+    const text = fragment.querySelector(".task-text");
+    const deleteButton = fragment.querySelector(".delete-button");
+
+    item.dataset.taskId = task.id;
+    item.classList.toggle("completed", task.completed);
+    checkbox.checked = task.completed;
+    checkbox.setAttribute("aria-label", `Отметить задачу «${task.text}» как выполненную`);
+    text.textContent = task.text;
+
+    checkbox.addEventListener("change", () => {
+      task.completed = checkbox.checked;
+      saveSchedules();
+      renderTasks();
+    });
+
+    deleteButton.addEventListener("click", () => {
+      schedules[activeSchedule] = getActiveTasks().filter((currentTask) => currentTask.id !== task.id);
+      saveSchedules();
+      renderTasks();
+    });
+
+    taskList.append(fragment);
+  }
+
+  const completedCount = tasks.filter((task) => task.completed).length;
+  const activeCount = tasks.length - completedCount;
+
+  taskSummary.textContent = tasks.length === 0
+    ? "Задач пока нет"
+    : `Всего: ${tasks.length} · Осталось: ${activeCount}`;
+
+  emptyState.hidden = tasks.length > 0;
+  clearCompletedButton.hidden = completedCount === 0;
+}
+
+function selectSchedule(scheduleKey) {
+  if (!Object.prototype.hasOwnProperty.call(SCHEDULES, scheduleKey)) return;
+
+  activeSchedule = scheduleKey;
+  saveActiveSchedule();
+  renderSchedule();
+  closeMenu();
+}
+
+function openMenu() {
+  sideMenu.classList.add("open");
+  sideMenu.setAttribute("aria-hidden", "false");
+  openMenuButton.setAttribute("aria-expanded", "true");
+  menuOverlay.hidden = false;
+  document.body.classList.add("menu-open");
+
+  const activeLink = scheduleLinks.find((link) => link.dataset.schedule === activeSchedule);
+  activeLink?.focus();
+}
+
+function closeMenu() {
+  sideMenu.classList.remove("open");
+  sideMenu.setAttribute("aria-hidden", "true");
+  openMenuButton.setAttribute("aria-expanded", "false");
+  menuOverlay.hidden = true;
+  document.body.classList.remove("menu-open");
+}
+
+openMenuButton.addEventListener("click", openMenu);
+closeMenuButton.addEventListener("click", closeMenu);
+menuOverlay.addEventListener("click", closeMenu);
+
+for (const link of scheduleLinks) {
+  link.addEventListener("click", () => selectSchedule(link.dataset.schedule));
+}
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && sideMenu.classList.contains("open")) {
+    closeMenu();
+    openMenuButton.focus();
+  }
+});
+
+taskForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const text = taskInput.value.trim();
+
+  if (!text) {
+    taskInput.focus();
+    return;
+  }
+
+  getActiveTasks().unshift(createTask(text));
+  saveSchedules();
+  renderTasks();
+  taskForm.reset();
+  taskInput.focus();
+});
+
+clearCompletedButton.addEventListener("click", () => {
+  schedules[activeSchedule] = getActiveTasks().filter((task) => !task.completed);
+  saveSchedules();
+  renderTasks();
+});
+
+function updateConnectionStatus() {
+  const online = navigator.onLine;
+  connectionStatus.textContent = online ? "Онлайн" : "Офлайн";
+  connectionStatus.classList.toggle("offline", !online);
+}
+
+window.addEventListener("online", updateConnectionStatus);
+window.addEventListener("offline", updateConnectionStatus);
+
+window.addEventListener("beforeinstallprompt", (event) => {
+  event.preventDefault();
+  deferredInstallPrompt = event;
+  installButton.hidden = false;
+});
+
+installButton.addEventListener("click", async () => {
+  if (!deferredInstallPrompt) return;
+
+  deferredInstallPrompt.prompt();
+  await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt = null;
+  installButton.hidden = true;
+});
+
+window.addEventListener("appinstalled", () => {
+  deferredInstallPrompt = null;
+  installButton.hidden = true;
+});
+
+function showIosInstallTip() {
+  const isIos = /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+  const isStandalone = window.navigator.standalone === true
+    || window.matchMedia("(display-mode: standalone)").matches;
+  iosInstallTip.hidden = !(isIos && !isStandalone);
+}
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", async () => {
+    try {
+      await navigator.serviceWorker.register("./service-worker.js");
+    } catch (error) {
+      console.warn("Service Worker не зарегистрирован:", error);
+    }
+  });
+}
+
+saveSchedules();
+renderSchedule();
+updateConnectionStatus();
+showIosInstallTip();
