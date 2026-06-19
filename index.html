@@ -1,269 +1,203 @@
-const STORAGE_KEY = "pwa-scheduler.schedules.v2";
-const ACTIVE_SCHEDULE_KEY = "pwa-scheduler.active-schedule.v1";
-const LEGACY_TASKS_KEY = "pwa-task-app.tasks.v1";
+<!doctype html>
+<!-- Сообщаем браузеру, что документ написан по современному стандарту HTML5. -->
+<html lang="ru">
+<head>
+  <!-- Используем UTF-8, чтобы русский текст и специальные символы отображались правильно. -->
+  <meta charset="UTF-8">
 
-const SCHEDULES = {
-  calendar: "Календарь",
-  regular: "Регулярное",
-  planning: "Планирование",
-  "task-list": "Список задач и целей"
-};
+  <!-- Подстраиваем ширину страницы под экран телефона и учитываем безопасные зоны iPhone. -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 
-const taskForm = document.querySelector("#taskForm");
-const taskInput = document.querySelector("#taskInput");
-const taskList = document.querySelector("#taskList");
-const taskTemplate = document.querySelector("#taskTemplate");
-const taskSummary = document.querySelector("#taskSummary");
-const emptyState = document.querySelector("#emptyState");
-const clearCompletedButton = document.querySelector("#clearCompletedButton");
-const installButton = document.querySelector("#installButton");
-const iosInstallTip = document.querySelector("#iosInstallTip");
-const connectionStatus = document.querySelector("#connectionStatus");
-const pageTitle = document.querySelector("#pageTitle");
-const openMenuButton = document.querySelector("#openMenuButton");
-const closeMenuButton = document.querySelector("#closeMenuButton");
-const sideMenu = document.querySelector("#sideMenu");
-const menuOverlay = document.querySelector("#menuOverlay");
-const scheduleLinks = [...document.querySelectorAll(".schedule-link")];
+  <!-- Цвет верхней панели браузера и системных элементов PWA. -->
+  <meta name="theme-color" content="#111827">
 
-let schedules = loadSchedules();
-let activeSchedule = loadActiveSchedule();
-let deferredInstallPrompt = null;
+  <!-- Краткое описание приложения для браузеров и поисковых систем. -->
+  <meta name="description" content="Устанавливаемое PWA-приложение для расписаний, планирования и списка задач.">
 
-function createEmptySchedules() {
-  return Object.fromEntries(Object.keys(SCHEDULES).map((key) => [key, []]));
-}
+  <!-- Эти параметры помогают приложению открываться на iPhone как отдельное PWA. -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Планировщик">
 
-function loadSchedules() {
-  const emptySchedules = createEmptySchedules();
+  <!-- Подключаем manifest: в нём находятся название, цвета, режим запуска и иконки PWA. -->
+  <link rel="manifest" href="manifest.webmanifest">
 
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    const parsed = saved ? JSON.parse(saved) : null;
+  <!-- Отдельная иконка для добавления приложения на домашний экран iPhone. -->
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
 
-    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-      for (const key of Object.keys(SCHEDULES)) {
-        emptySchedules[key] = Array.isArray(parsed[key]) ? parsed[key] : [];
-      }
-      return emptySchedules;
-    }
+  <!-- Обычная иконка вкладки браузера. -->
+  <link rel="icon" href="icons/icon-192.png" type="image/png">
 
-    const legacySaved = localStorage.getItem(LEGACY_TASKS_KEY);
-    const legacyTasks = legacySaved ? JSON.parse(legacySaved) : [];
+  <!-- Подключаем файл со всеми стилями интерфейса. -->
+  <link rel="stylesheet" href="styles.css">
 
-    if (Array.isArray(legacyTasks) && legacyTasks.length > 0) {
-      emptySchedules["task-list"] = legacyTasks;
-    }
-  } catch (error) {
-    console.warn("Не удалось прочитать сохранённые расписания:", error);
-  }
+  <!-- Начальный заголовок вкладки. JavaScript меняет его при выборе раздела. -->
+  <title>Календарь — Планировщик</title>
+</head>
+<body>
+  <!-- Затемнённая область за боковым меню. Нажатие на неё закрывает меню. -->
+  <div id="menuOverlay" class="menu-overlay" hidden></div>
 
-  return emptySchedules;
-}
+  <!-- Боковое меню навигации. Изначально оно находится за левой границей экрана. -->
+  <aside id="sideMenu" class="side-menu" aria-labelledby="menuTitle" aria-hidden="true">
+    <!-- Верхняя часть меню: название и кнопка закрытия. -->
+    <div class="side-menu-header">
+      <div>
+        <p class="eyebrow">Навигация</p>
+        <h2 id="menuTitle">Расписания</h2>
+      </div>
 
-function saveSchedules() {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(schedules));
-  } catch (error) {
-    console.warn("Не удалось сохранить расписания:", error);
-  }
-}
+      <!-- Кнопка закрывает боковое меню. Символ × скрыт от экранных дикторов. -->
+      <button id="closeMenuButton" class="icon-button close-button" type="button" aria-label="Закрыть меню">
+        <span aria-hidden="true">×</span>
+      </button>
+    </div>
 
-function loadActiveSchedule() {
-  const saved = localStorage.getItem(ACTIVE_SCHEDULE_KEY);
-  return Object.prototype.hasOwnProperty.call(SCHEDULES, saved) ? saved : "calendar";
-}
+    <!-- Каждая кнопка содержит data-schedule — внутренний ключ раздела для JavaScript. -->
+    <nav class="schedule-navigation" aria-label="Виды расписания">
+      <button class="schedule-link" type="button" data-schedule="calendar">
+        <span class="schedule-number" aria-hidden="true">01</span>
+        <span>Календарь</span>
+      </button>
 
-function saveActiveSchedule() {
-  try {
-    localStorage.setItem(ACTIVE_SCHEDULE_KEY, activeSchedule);
-  } catch (error) {
-    console.warn("Не удалось сохранить выбранное расписание:", error);
-  }
-}
+      <button class="schedule-link" type="button" data-schedule="regular">
+        <span class="schedule-number" aria-hidden="true">02</span>
+        <span>Регулярное</span>
+      </button>
 
-function getActiveTasks() {
-  return schedules[activeSchedule];
-}
+      <button class="schedule-link" type="button" data-schedule="planning">
+        <span class="schedule-number" aria-hidden="true">03</span>
+        <span>Планирование</span>
+      </button>
 
-function createTask(text) {
-  return {
-    id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
-    text,
-    completed: false,
-    createdAt: new Date().toISOString()
-  };
-}
+      <button class="schedule-link" type="button" data-schedule="task-list">
+        <span class="schedule-number" aria-hidden="true">04</span>
+        <span>Список задач и целей</span>
+      </button>
+    </nav>
 
-function renderSchedule() {
-  const scheduleName = SCHEDULES[activeSchedule];
-  pageTitle.textContent = scheduleName;
-  document.title = `${scheduleName} — Планировщик`;
+    <!-- Подсказка объясняет, что данные разделов не смешиваются. -->
+    <p class="menu-note">У каждого раздела свой отдельный список и отдельное сохранение.</p>
+  </aside>
 
-  for (const link of scheduleLinks) {
-    const isActive = link.dataset.schedule === activeSchedule;
-    link.classList.toggle("active", isActive);
-    link.setAttribute("aria-current", isActive ? "page" : "false");
-  }
+  <!-- Основная видимая оболочка приложения. -->
+  <div class="app-shell">
+    <!-- Верхняя панель с кнопкой меню, названием раздела и кнопкой установки. -->
+    <header class="topbar">
+      <div class="topbar-main">
+        <!-- Кнопка-гамбургер открывает боковое меню. -->
+        <button
+          id="openMenuButton"
+          class="icon-button menu-button"
+          type="button"
+          aria-label="Открыть меню расписаний"
+          aria-controls="sideMenu"
+          aria-expanded="false"
+        >
+          <!-- Три вложенных span формируют три горизонтальные полоски. -->
+          <span class="hamburger" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
+          </span>
+        </button>
 
-  renderTasks();
-}
+        <!-- JavaScript заменяет текст pageTitle при переключении раздела. -->
+        <div class="page-heading">
+          <p class="eyebrow">Планировщик</p>
+          <h1 id="pageTitle">Календарь</h1>
+        </div>
+      </div>
 
-function renderTasks() {
-  const tasks = getActiveTasks();
-  taskList.replaceChildren();
+      <!-- Браузер показывает эту кнопку, когда PWA можно установить автоматически. -->
+      <button id="installButton" class="secondary-button" type="button" hidden>
+        Установить
+      </button>
+    </header>
 
-  for (const task of tasks) {
-    const fragment = taskTemplate.content.cloneNode(true);
-    const item = fragment.querySelector(".task-item");
-    const checkbox = fragment.querySelector(".task-checkbox");
-    const text = fragment.querySelector(".task-text");
-    const deleteButton = fragment.querySelector(".delete-button");
+    <!-- Основное содержимое выбранного раздела. -->
+    <main id="mainContent">
+      <!-- Карточка добавления новой задачи. -->
+      <section class="card" aria-labelledby="new-task-title">
+        <h2 id="new-task-title">Новая задача</h2>
 
-    item.dataset.taskId = task.id;
-    item.classList.toggle("completed", task.completed);
-    checkbox.checked = task.completed;
-    checkbox.setAttribute("aria-label", `Отметить задачу «${task.text}» как выполненную`);
-    text.textContent = task.text;
+        <!-- При отправке формы JavaScript создаёт задачу и сохраняет её в localStorage. -->
+        <form id="taskForm" class="task-form">
+          <!-- Подпись скрыта визуально, но остаётся доступной экранным дикторам. -->
+          <label class="sr-only" for="taskInput">Текст задачи</label>
 
-    checkbox.addEventListener("change", () => {
-      task.completed = checkbox.checked;
-      saveSchedules();
-      renderTasks();
-    });
+          <!-- Поле ограничено 120 символами и обязательно для заполнения. -->
+          <input
+            id="taskInput"
+            name="task"
+            type="text"
+            maxlength="120"
+            placeholder="Например: Купить продукты"
+            autocomplete="off"
+            required
+          >
 
-    deleteButton.addEventListener("click", () => {
-      schedules[activeSchedule] = getActiveTasks().filter((currentTask) => currentTask.id !== task.id);
-      saveSchedules();
-      renderTasks();
-    });
+          <button class="primary-button" type="submit">Добавить</button>
+        </form>
+      </section>
 
-    taskList.append(fragment);
-  }
+      <!-- Карточка со списком задач выбранного раздела. -->
+      <section class="card" aria-labelledby="tasks-title">
+        <div class="section-heading">
+          <div>
+            <h2 id="tasks-title">Список</h2>
 
-  const completedCount = tasks.filter((task) => task.completed).length;
-  const activeCount = tasks.length - completedCount;
+            <!-- JavaScript выводит сюда количество всех и оставшихся задач. -->
+            <p id="taskSummary" class="muted">Задач пока нет</p>
+          </div>
 
-  taskSummary.textContent = tasks.length === 0
-    ? "Задач пока нет"
-    : `Всего: ${tasks.length} · Осталось: ${activeCount}`;
+          <!-- Кнопка скрывается, если выполненных задач нет. -->
+          <button id="clearCompletedButton" class="text-button" type="button">
+            Удалить выполненные
+          </button>
+        </div>
 
-  emptyState.hidden = tasks.length > 0;
-  clearCompletedButton.hidden = completedCount === 0;
-}
+        <!-- Сюда JavaScript добавляет готовые элементы задач из шаблона ниже. -->
+        <ul id="taskList" class="task-list" aria-live="polite"></ul>
 
-function selectSchedule(scheduleKey) {
-  if (!Object.prototype.hasOwnProperty.call(SCHEDULES, scheduleKey)) return;
+        <!-- Этот блок показывается, когда в выбранном разделе нет задач. -->
+        <div id="emptyState" class="empty-state">
+          <div class="empty-icon" aria-hidden="true">✓</div>
+          <p>Добавьте первую задачу.</p>
+        </div>
+      </section>
 
-  activeSchedule = scheduleKey;
-  saveActiveSchedule();
-  renderSchedule();
-  closeMenu();
-}
+      <!-- Подсказка показывается только в Safari на iPhone, если PWA ещё не установлено. -->
+      <section id="iosInstallTip" class="install-tip" hidden>
+        <strong>Установка на iPhone:</strong>
+        откройте меню «Поделиться» в Safari и выберите «На экран “Домой”».
+      </section>
+    </main>
 
-function openMenu() {
-  sideMenu.classList.add("open");
-  sideMenu.setAttribute("aria-hidden", "false");
-  openMenuButton.setAttribute("aria-expanded", "true");
-  menuOverlay.hidden = false;
-  document.body.classList.add("menu-open");
+    <!-- Нижняя строка показывает состояние сети и место хранения данных. -->
+    <footer>
+      <span id="connectionStatus">Онлайн</span>
+      <span>Данные хранятся на устройстве</span>
+    </footer>
+  </div>
 
-  const activeLink = scheduleLinks.find((link) => link.dataset.schedule === activeSchedule);
-  activeLink?.focus();
-}
+  <!--
+    Шаблон одной задачи. Он не отображается сам по себе.
+    JavaScript копирует его для каждой задачи и подставляет нужные данные.
+  -->
+  <template id="taskTemplate">
+    <li class="task-item">
+      <label class="task-check">
+        <input class="task-checkbox" type="checkbox">
+        <span class="custom-checkbox" aria-hidden="true"></span>
+        <span class="task-text"></span>
+      </label>
 
-function closeMenu() {
-  sideMenu.classList.remove("open");
-  sideMenu.setAttribute("aria-hidden", "true");
-  openMenuButton.setAttribute("aria-expanded", "false");
-  menuOverlay.hidden = true;
-  document.body.classList.remove("menu-open");
-}
+      <button class="delete-button" type="button" aria-label="Удалить задачу">Удалить</button>
+    </li>
+  </template>
 
-openMenuButton.addEventListener("click", openMenu);
-closeMenuButton.addEventListener("click", closeMenu);
-menuOverlay.addEventListener("click", closeMenu);
-
-for (const link of scheduleLinks) {
-  link.addEventListener("click", () => selectSchedule(link.dataset.schedule));
-}
-
-document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape" && sideMenu.classList.contains("open")) {
-    closeMenu();
-    openMenuButton.focus();
-  }
-});
-
-taskForm.addEventListener("submit", (event) => {
-  event.preventDefault();
-  const text = taskInput.value.trim();
-
-  if (!text) {
-    taskInput.focus();
-    return;
-  }
-
-  getActiveTasks().unshift(createTask(text));
-  saveSchedules();
-  renderTasks();
-  taskForm.reset();
-  taskInput.focus();
-});
-
-clearCompletedButton.addEventListener("click", () => {
-  schedules[activeSchedule] = getActiveTasks().filter((task) => !task.completed);
-  saveSchedules();
-  renderTasks();
-});
-
-function updateConnectionStatus() {
-  const online = navigator.onLine;
-  connectionStatus.textContent = online ? "Онлайн" : "Офлайн";
-  connectionStatus.classList.toggle("offline", !online);
-}
-
-window.addEventListener("online", updateConnectionStatus);
-window.addEventListener("offline", updateConnectionStatus);
-
-window.addEventListener("beforeinstallprompt", (event) => {
-  event.preventDefault();
-  deferredInstallPrompt = event;
-  installButton.hidden = false;
-});
-
-installButton.addEventListener("click", async () => {
-  if (!deferredInstallPrompt) return;
-
-  deferredInstallPrompt.prompt();
-  await deferredInstallPrompt.userChoice;
-  deferredInstallPrompt = null;
-  installButton.hidden = true;
-});
-
-window.addEventListener("appinstalled", () => {
-  deferredInstallPrompt = null;
-  installButton.hidden = true;
-});
-
-function showIosInstallTip() {
-  const isIos = /iphone|ipad|ipod/i.test(window.navigator.userAgent);
-  const isStandalone = window.navigator.standalone === true
-    || window.matchMedia("(display-mode: standalone)").matches;
-  iosInstallTip.hidden = !(isIos && !isStandalone);
-}
-
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", async () => {
-    try {
-      await navigator.serviceWorker.register("./service-worker.js");
-    } catch (error) {
-      console.warn("Service Worker не зарегистрирован:", error);
-    }
-  });
-}
-
-saveSchedules();
-renderSchedule();
-updateConnectionStatus();
-showIosInstallTip();
+  <!-- defer заставляет браузер сначала прочитать HTML, а затем выполнить JavaScript. -->
+  <script src="app.js" defer></script>
+</body>
+</html>
