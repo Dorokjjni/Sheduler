@@ -1,33 +1,146 @@
-{
-  "id": "./",
-  "name": "Планировщик",
-  "short_name": "Планировщик",
-  "description": "Расписания, планирование и списки задач в устанавливаемом PWA-приложении.",
-  "lang": "ru",
-  "start_url": "./",
-  "scope": "./",
-  "display": "standalone",
-  "orientation": "portrait-primary",
-  "background_color": "#f3f4f6",
-  "theme_color": "#111827",
-  "icons": [
-    {
-      "src": "icons/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icons/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icons/icon-maskable-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
-    }
-  ]
-}
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#111827">
+  <meta name="description" content="Устанавливаемое PWA-приложение для расписаний, планирования и списка задач.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Планировщик">
+
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="icon" href="icons/icon-192.png" type="image/png">
+  <link rel="stylesheet" href="styles.css">
+
+  <title>Календарь — Планировщик</title>
+</head>
+<body>
+  <div id="menuOverlay" class="menu-overlay" hidden></div>
+
+  <aside id="sideMenu" class="side-menu" aria-labelledby="menuTitle" aria-hidden="true">
+    <div class="side-menu-header">
+      <div>
+        <p class="eyebrow">Навигация</p>
+        <h2 id="menuTitle">Расписания</h2>
+      </div>
+      <button id="closeMenuButton" class="icon-button close-button" type="button" aria-label="Закрыть меню">
+        <span aria-hidden="true">×</span>
+      </button>
+    </div>
+
+    <nav class="schedule-navigation" aria-label="Виды расписания">
+      <button class="schedule-link" type="button" data-schedule="calendar">
+        <span class="schedule-number" aria-hidden="true">01</span>
+        <span>Календарь</span>
+      </button>
+      <button class="schedule-link" type="button" data-schedule="regular">
+        <span class="schedule-number" aria-hidden="true">02</span>
+        <span>Регулярное</span>
+      </button>
+      <button class="schedule-link" type="button" data-schedule="planning">
+        <span class="schedule-number" aria-hidden="true">03</span>
+        <span>Планирование</span>
+      </button>
+      <button class="schedule-link" type="button" data-schedule="task-list">
+        <span class="schedule-number" aria-hidden="true">04</span>
+        <span>Список задач и целей</span>
+      </button>
+    </nav>
+
+    <p class="menu-note">У каждого раздела свой отдельный список и отдельное сохранение.</p>
+  </aside>
+
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="topbar-main">
+        <button
+          id="openMenuButton"
+          class="icon-button menu-button"
+          type="button"
+          aria-label="Открыть меню расписаний"
+          aria-controls="sideMenu"
+          aria-expanded="false"
+        >
+          <span class="hamburger" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
+          </span>
+        </button>
+
+        <div class="page-heading">
+          <p class="eyebrow">Планировщик</p>
+          <h1 id="pageTitle">Календарь</h1>
+        </div>
+      </div>
+
+      <button id="installButton" class="secondary-button" type="button" hidden>
+        Установить
+      </button>
+    </header>
+
+    <main id="mainContent">
+      <section class="card" aria-labelledby="new-task-title">
+        <h2 id="new-task-title">Новая задача</h2>
+        <form id="taskForm" class="task-form">
+          <label class="sr-only" for="taskInput">Текст задачи</label>
+          <input
+            id="taskInput"
+            name="task"
+            type="text"
+            maxlength="120"
+            placeholder="Например: Купить продукты"
+            autocomplete="off"
+            required
+          >
+          <button class="primary-button" type="submit">Добавить</button>
+        </form>
+      </section>
+
+      <section class="card" aria-labelledby="tasks-title">
+        <div class="section-heading">
+          <div>
+            <h2 id="tasks-title">Список</h2>
+            <p id="taskSummary" class="muted">Задач пока нет</p>
+          </div>
+          <button id="clearCompletedButton" class="text-button" type="button">
+            Удалить выполненные
+          </button>
+        </div>
+
+        <ul id="taskList" class="task-list" aria-live="polite"></ul>
+
+        <div id="emptyState" class="empty-state">
+          <div class="empty-icon" aria-hidden="true">✓</div>
+          <p>Добавьте первую задачу.</p>
+        </div>
+      </section>
+
+      <section id="iosInstallTip" class="install-tip" hidden>
+        <strong>Установка на iPhone:</strong>
+        откройте меню «Поделиться» в Safari и выберите «На экран “Домой”».
+      </section>
+    </main>
+
+    <footer>
+      <span id="connectionStatus">Онлайн</span>
+      <span>Данные хранятся на устройстве</span>
+    </footer>
+  </div>
+
+  <template id="taskTemplate">
+    <li class="task-item">
+      <label class="task-check">
+        <input class="task-checkbox" type="checkbox">
+        <span class="custom-checkbox" aria-hidden="true"></span>
+        <span class="task-text"></span>
+      </label>
+      <button class="delete-button" type="button" aria-label="Удалить задачу">Удалить</button>
+    </li>
+  </template>
+
+  <script src="app.js" defer></script>
+</body>
+</html>

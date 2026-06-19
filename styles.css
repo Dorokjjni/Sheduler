@@ -1,82 +1,46 @@
-/*
- * Все стили приложения.
- * CSS отвечает только за внешний вид: размеры, расположение, цвета,
- * анимации, адаптацию под телефон и визуальные состояния элементов.
- */
-
-/* -------------------------------------------------------------------------- */
-/* Общие переменные и базовые правила                                         */
-/* -------------------------------------------------------------------------- */
-
-/* :root — корневой элемент документа. Здесь задаются общие параметры страницы. */
 :root {
-  /* Сообщаем браузеру, что интерфейс рассчитан на светлую цветовую схему. */
   color-scheme: light;
-
-  /* Используем системные шрифты: они быстро загружаются и хорошо выглядят на iPhone. */
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-
-  /* Базовые цвета страницы и текста. */
   background: #f3f4f6;
   color: #111827;
-
-  /* Запрещаем браузеру искусственно создавать отсутствующие начертания шрифта. */
   font-synthesis: none;
-
-  /* Просим браузер уделить больше внимания читаемости текста. */
   text-rendering: optimizeLegibility;
 }
 
-/* box-sizing: border-box делает расчёт ширины элементов предсказуемым. */
 * {
   box-sizing: border-box;
 }
 
-/* Страница должна занимать минимум всю высоту окна. */
 html {
   min-height: 100%;
   background: #f3f4f6;
 }
 
-/* Основное оформление фона приложения. */
 body {
-  /* Не даём интерфейсу сжиматься уже 320 пикселей. */
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
-
-  /* Добавляем мягкое синее свечение поверх светло-серого фона. */
   background:
     radial-gradient(circle at top left, rgba(59, 130, 246, 0.12), transparent 34rem),
     #f3f4f6;
 }
 
-/* Когда меню открыто, запрещаем прокрутку страницы под ним. */
 body.menu-open {
   overflow: hidden;
 }
 
-/* Кнопки и поля ввода наследуют тот же шрифт, что и страница. */
 button,
 input {
   font: inherit;
 }
 
-/* Показываем курсор-указатель над всеми кнопками на компьютере. */
 button {
   cursor: pointer;
 }
 
-/* -------------------------------------------------------------------------- */
-/* Основная оболочка и верхняя панель                                         */
-/* -------------------------------------------------------------------------- */
-
-/* Ограничиваем ширину приложения и центрируем его на больших экранах. */
 .app-shell {
   width: min(760px, 100%);
   margin: 0 auto;
-
-  /* env(safe-area-inset-*) учитывает вырез, Dynamic Island и нижний индикатор iPhone. */
   padding:
     max(24px, env(safe-area-inset-top))
     max(16px, env(safe-area-inset-right))
@@ -84,7 +48,6 @@ button {
     max(16px, env(safe-area-inset-left));
 }
 
-/* Верхняя строка содержит заголовок и кнопку установки. */
 .topbar {
   display: flex;
   align-items: center;
@@ -93,7 +56,6 @@ button {
   margin-bottom: 24px;
 }
 
-/* Левая часть верхней строки: гамбургер и название раздела. */
 .topbar-main {
   display: flex;
   align-items: center;
@@ -101,12 +63,10 @@ button {
   min-width: 0;
 }
 
-/* min-width: 0 разрешает длинному заголовку корректно переноситься. */
 .page-heading {
   min-width: 0;
 }
 
-/* Маленькая синяя надпись над крупным заголовком. */
 .eyebrow {
   margin: 0 0 4px;
   color: #2563eb;
@@ -116,43 +76,30 @@ button {
   text-transform: uppercase;
 }
 
-/* Убираем стандартный верхний отступ у основных текстовых элементов. */
 h1,
 h2,
 p {
   margin-top: 0;
 }
 
-/* Крупный заголовок текущего раздела. */
 h1 {
   margin-bottom: 0;
-
-  /* clamp меняет размер плавно: минимум 1.75rem, максимум 3.25rem. */
   font-size: clamp(1.75rem, 7vw, 3.25rem);
   letter-spacing: -0.04em;
   line-height: 1.05;
-
-  /* Разрешаем перенос очень длинных слов. */
   overflow-wrap: anywhere;
 }
 
-/* Заголовки внутри карточек. */
 h2 {
   margin-bottom: 14px;
   font-size: 1.1rem;
 }
 
-/* Основные секции располагаются вертикально с одинаковым промежутком. */
 main {
   display: grid;
   gap: 16px;
 }
 
-/* -------------------------------------------------------------------------- */
-/* Универсальные кнопки-иконки и гамбургер                                    */
-/* -------------------------------------------------------------------------- */
-
-/* Общая форма квадратных кнопок меню и закрытия. */
 .icon-button {
   display: grid;
   flex: 0 0 auto;
@@ -166,21 +113,18 @@ main {
   box-shadow: 0 10px 28px rgba(17, 24, 39, 0.08);
 }
 
-/* Видимая рамка для навигации с клавиатуры. */
 .icon-button:focus-visible,
 .schedule-link:focus-visible {
   outline: 3px solid rgba(37, 99, 235, 0.28);
   outline-offset: 3px;
 }
 
-/* Контейнер трёх полосок гамбургера. */
 .hamburger {
   display: grid;
   gap: 5px;
   width: 22px;
 }
 
-/* Каждая вложенная линия становится горизонтальной полоской. */
 .hamburger span {
   display: block;
   height: 2.5px;
@@ -188,11 +132,6 @@ main {
   background: currentColor;
 }
 
-/* -------------------------------------------------------------------------- */
-/* Затемнение и выдвижное боковое меню                                        */
-/* -------------------------------------------------------------------------- */
-
-/* Полупрозрачный слой закрывает весь экран под открытым меню. */
 .menu-overlay {
   position: fixed;
   z-index: 90;
@@ -201,43 +140,29 @@ main {
   backdrop-filter: blur(3px);
 }
 
-/* Основная боковая панель. */
 .side-menu {
   position: fixed;
   z-index: 100;
   top: 0;
   bottom: 0;
   left: 0;
-
-  /* Панель занимает до 360px, но оставляет справа часть экрана. */
   width: min(360px, calc(100% - 42px));
-
-  /* Учитываем безопасные зоны iPhone внутри панели. */
   padding:
     max(22px, env(safe-area-inset-top))
     18px
     max(22px, env(safe-area-inset-bottom))
     max(18px, env(safe-area-inset-left));
-
   background: #ffffff;
   box-shadow: 24px 0 60px rgba(17, 24, 39, 0.2);
-
-  /* В закрытом состоянии панель полностью сдвинута влево. */
   transform: translateX(-105%);
-
-  /* Плавно анимируем появление и закрытие панели. */
   transition: transform 220ms ease;
-
-  /* Разрешаем прокрутку меню, если экран очень низкий. */
   overflow-y: auto;
 }
 
-/* JavaScript добавляет класс open — панель возвращается на экран. */
 .side-menu.open {
   transform: translateX(0);
 }
 
-/* Верхняя строка боковой панели. */
 .side-menu-header {
   display: flex;
   align-items: flex-start;
@@ -246,14 +171,12 @@ main {
   margin-bottom: 26px;
 }
 
-/* Заголовок внутри меню крупнее обычных заголовков карточек. */
 .side-menu-header h2 {
   margin: 0;
   font-size: 1.65rem;
   letter-spacing: -0.03em;
 }
 
-/* Кнопка с крестиком немного меньше основной кнопки меню. */
 .close-button {
   width: 42px;
   height: 42px;
@@ -263,13 +186,11 @@ main {
   line-height: 1;
 }
 
-/* Кнопки разделов располагаются вертикально. */
 .schedule-navigation {
   display: grid;
   gap: 9px;
 }
 
-/* Обычное состояние одной кнопки раздела. */
 .schedule-link {
   display: grid;
   grid-template-columns: 38px minmax(0, 1fr);
@@ -286,13 +207,11 @@ main {
   text-align: left;
 }
 
-/* Подсветка при наведении мыши. */
 .schedule-link:hover {
   border-color: #bfdbfe;
   background: #eff6ff;
 }
 
-/* JavaScript добавляет active выбранному разделу. */
 .schedule-link.active {
   border-color: #2563eb;
   background: #2563eb;
@@ -300,7 +219,6 @@ main {
   box-shadow: 0 12px 26px rgba(37, 99, 235, 0.24);
 }
 
-/* Маленький номер 01–04 слева от названия раздела. */
 .schedule-number {
   color: #6b7280;
   font-size: 0.76rem;
@@ -308,12 +226,10 @@ main {
   letter-spacing: 0.08em;
 }
 
-/* В выбранном пункте номер становится светлее. */
 .schedule-link.active .schedule-number {
   color: #dbeafe;
 }
 
-/* Поясняющий текст внизу меню. */
 .menu-note {
   margin: 22px 4px 0;
   color: #6b7280;
@@ -321,11 +237,6 @@ main {
   line-height: 1.5;
 }
 
-/* -------------------------------------------------------------------------- */
-/* Карточки и форма добавления задачи                                         */
-/* -------------------------------------------------------------------------- */
-
-/* Общий стеклянный вид карточек и подсказки установки. */
 .card,
 .install-tip {
   border: 1px solid rgba(17, 24, 39, 0.08);
@@ -335,19 +246,16 @@ main {
   backdrop-filter: blur(18px);
 }
 
-/* Внутренние отступы обычной карточки. */
 .card {
   padding: 20px;
 }
 
-/* На широком экране поле и кнопка стоят в одной строке. */
 .task-form {
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 10px;
 }
 
-/* Оформление текстового поля. */
 input[type="text"] {
   width: 100%;
   min-height: 48px;
@@ -359,13 +267,11 @@ input[type="text"] {
   outline: none;
 }
 
-/* Синяя рамка показывает, что поле сейчас активно. */
 input[type="text"]:focus {
   border-color: #2563eb;
   box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.13);
 }
 
-/* Общие параметры всех текстовых кнопок приложения. */
 .primary-button,
 .secondary-button,
 .delete-button,
@@ -375,7 +281,6 @@ input[type="text"]:focus {
   font-weight: 700;
 }
 
-/* Основная синяя кнопка добавления задачи. */
 .primary-button {
   min-height: 48px;
   padding: 0 18px;
@@ -383,7 +288,6 @@ input[type="text"]:focus {
   color: white;
 }
 
-/* При нажатии кнопка слегка сдвигается вниз и ощущается «живой». */
 .primary-button:active,
 .secondary-button:active,
 .delete-button:active,
@@ -392,18 +296,12 @@ input[type="text"]:focus {
   transform: translateY(1px);
 }
 
-/* Тёмная кнопка установки PWA. */
 .secondary-button {
   padding: 11px 14px;
   background: #111827;
   color: white;
 }
 
-/* -------------------------------------------------------------------------- */
-/* Заголовок списка и статистика                                              */
-/* -------------------------------------------------------------------------- */
-
-/* Заголовок списка и кнопка удаления выполненных стоят по краям. */
 .section-heading {
   display: flex;
   align-items: flex-start;
@@ -412,19 +310,16 @@ input[type="text"]:focus {
   margin-bottom: 10px;
 }
 
-/* Уменьшаем отступ между «Список» и статистикой. */
 .section-heading h2 {
   margin-bottom: 3px;
 }
 
-/* Второстепенный серый текст. */
 .muted {
   margin-bottom: 0;
   color: #6b7280;
   font-size: 0.92rem;
 }
 
-/* Кнопка выглядит как обычная синяя текстовая ссылка. */
 .text-button {
   padding: 7px 0;
   background: transparent;
@@ -432,11 +327,6 @@ input[type="text"]:focus {
   white-space: nowrap;
 }
 
-/* -------------------------------------------------------------------------- */
-/* Список и отдельная задача                                                  */
-/* -------------------------------------------------------------------------- */
-
-/* Убираем стандартные маркеры ul и располагаем задачи сеткой. */
 .task-list {
   display: grid;
   gap: 10px;
@@ -445,7 +335,6 @@ input[type="text"]:focus {
   list-style: none;
 }
 
-/* Карточка одной задачи. */
 .task-item {
   display: flex;
   align-items: center;
@@ -458,7 +347,6 @@ input[type="text"]:focus {
   background: white;
 }
 
-/* Область с checkbox и текстом занимает всё свободное место. */
 .task-check {
   display: flex;
   flex: 1;
@@ -467,7 +355,6 @@ input[type="text"]:focus {
   min-width: 0;
 }
 
-/* Настоящий checkbox остаётся доступным, но визуально скрывается. */
 .task-checkbox {
   position: absolute;
   width: 1px;
@@ -476,7 +363,6 @@ input[type="text"]:focus {
   opacity: 0;
 }
 
-/* Вместо стандартного checkbox рисуем собственный квадрат. */
 .custom-checkbox {
   display: grid;
   flex: 0 0 auto;
@@ -488,13 +374,11 @@ input[type="text"]:focus {
   background: white;
 }
 
-/* Когда настоящий checkbox отмечен, соседний квадрат становится синим. */
 .task-checkbox:checked + .custom-checkbox {
   border-color: #2563eb;
   background: #2563eb;
 }
 
-/* Добавляем белую галочку внутрь отмеченного квадрата. */
 .task-checkbox:checked + .custom-checkbox::after {
   content: "✓";
   color: white;
@@ -502,24 +386,20 @@ input[type="text"]:focus {
   font-weight: 900;
 }
 
-/* Видимый фокус для управления checkbox с клавиатуры. */
 .task-checkbox:focus-visible + .custom-checkbox {
   outline: 3px solid rgba(37, 99, 235, 0.25);
   outline-offset: 2px;
 }
 
-/* Длинный текст задачи можно переносить на новую строку. */
 .task-text {
   overflow-wrap: anywhere;
 }
 
-/* Выполненная задача становится серой и зачёркнутой. */
 .task-item.completed .task-text {
   color: #9ca3af;
   text-decoration: line-through;
 }
 
-/* Красная кнопка удаления одной задачи. */
 .delete-button {
   padding: 9px 10px;
   background: #fee2e2;
@@ -527,23 +407,16 @@ input[type="text"]:focus {
   font-size: 0.86rem;
 }
 
-/* -------------------------------------------------------------------------- */
-/* Пустой список, подсказки и нижняя строка                                   */
-/* -------------------------------------------------------------------------- */
-
-/* Сообщение при отсутствии задач. */
 .empty-state {
   padding: 34px 12px 26px;
   color: #6b7280;
   text-align: center;
 }
 
-/* Убираем лишний нижний отступ у текста пустого состояния. */
 .empty-state p {
   margin-bottom: 0;
 }
 
-/* Голубой квадрат с галочкой. */
 .empty-icon {
   display: grid;
   width: 48px;
@@ -557,14 +430,12 @@ input[type="text"]:focus {
   font-weight: 900;
 }
 
-/* Подсказка установки PWA на iPhone. */
 .install-tip {
   padding: 16px 18px;
   color: #374151;
   line-height: 1.5;
 }
 
-/* Нижняя строка с состоянием сети и информацией о данных. */
 footer {
   display: flex;
   justify-content: space-between;
@@ -574,20 +445,11 @@ footer {
   font-size: 0.82rem;
 }
 
-/* Офлайн-состояние выделяется тёплым цветом. */
 .offline {
   color: #b45309;
   font-weight: 700;
 }
 
-/* -------------------------------------------------------------------------- */
-/* Доступность и служебные состояния                                          */
-/* -------------------------------------------------------------------------- */
-
-/*
- * Элемент остаётся доступным экранным дикторам,
- * но визуально занимает только один невидимый пиксель.
- */
 .sr-only {
   position: absolute;
   width: 1px;
@@ -600,75 +462,55 @@ footer {
   border: 0;
 }
 
-/* Атрибут hidden всегда полностью скрывает элемент. */
 [hidden] {
   display: none !important;
 }
 
-/* -------------------------------------------------------------------------- */
-/* Адаптация под узкие экраны                                                 */
-/* -------------------------------------------------------------------------- */
-
-/* Эти правила применяются на телефонах и окнах шириной до 560px. */
 @media (max-width: 560px) {
-  /* Выравниваем элементы верхней панели по верхнему краю. */
   .topbar {
     align-items: flex-start;
   }
 
-  /* Немного уменьшаем промежуток между меню и заголовком. */
   .topbar-main {
     align-items: flex-start;
     gap: 11px;
   }
 
-  /* На телефоне кнопка меню становится компактнее. */
   .menu-button {
     width: 44px;
     height: 44px;
     border-radius: 14px;
   }
 
-  /* Поле ввода и кнопка переходят на две строки. */
   .task-form {
     grid-template-columns: 1fr;
   }
 
-  /* Кнопка добавления занимает всю ширину карточки. */
   .primary-button {
     width: 100%;
   }
 
-  /* Заголовок списка и кнопка очистки располагаются вертикально. */
   .section-heading {
     align-items: stretch;
     flex-direction: column;
     gap: 4px;
   }
 
-  /* Кнопка не растягивается на всю ширину. */
   .text-button {
     align-self: flex-start;
   }
 
-  /* Элементы нижней строки тоже переходят в колонку. */
   footer {
     flex-direction: column;
     gap: 4px;
   }
 }
 
-/* -------------------------------------------------------------------------- */
-/* Анимации                                                                   */
-/* -------------------------------------------------------------------------- */
-
-/* Анимацию добавления задач включаем только если пользователь её не отключил. */
 @media (prefers-reduced-motion: no-preference) {
   .task-item {
     animation: appear 180ms ease-out;
   }
 
-  /* Новая задача слегка поднимается и проявляется. */
   @keyframes appear {
     from {
       transform: translateY(4px);
@@ -677,7 +519,6 @@ footer {
   }
 }
 
-/* Пользователям с настройкой «уменьшение движения» отключаем анимацию меню. */
 @media (prefers-reduced-motion: reduce) {
   .side-menu {
     transition: none;
